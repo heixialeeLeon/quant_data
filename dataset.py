@@ -25,7 +25,7 @@ class StockData(Dataset):
         self.stock_list_df = pd.read_csv(self.config.stock_list_file,
                                          dtype={"指数名称": str, "成分券代码": str, "成分券名称": str, "交易所": str},
                                          index_col="成分券代码")
-        self.stock_list = self.stock_list_df.index.tolist()[:5]
+        self.stock_list = self.stock_list_df.index.tolist()
 
     def _load_data(self, stock_list):
         self.data = list()
