@@ -27,6 +27,14 @@ class StockData(Dataset):
         self.stock_list_df['成分券代码'].apply(lambda x: ':0>6d'.format(x))
         self.stock_list = self.stock_list_df['成分券代码'].tolist()
 
+    def file_exist_check(self):
+        for stock_code in self.stock_list:
+            stock_name = self.stock_list_df[self.stock_list_df['成分券代码'] == stock_code]["成分券名称"].values[0]
+            stock_name = stock_name.replace(" ", "")
+            file_name = "{}_{}.parquet".format(stock_code, stock_name)
+            if not os.path.exists(os.path.join(self.config.min_data_root,file_name)):
+                print(file_name)
+
     def _load_data(self, stock_list):
         self.data = list()
         for stock_code in stock_list:
@@ -35,6 +43,7 @@ class StockData(Dataset):
 
     def _load_data_by_code(self, stock_code):
         stock_name = self.stock_list_df[self.stock_list_df['成分券代码'] == stock_code]["成分券名称"].values[0]
+        stock_name = stock_name.replace(" ","")
         file_name = "{}_{}.parquet".format(stock_code,stock_name)
         stock_daily_file = os.path.join(self.config.daily_data_root, file_name)
         stock_min_file = os.path.join(self.config.min_data_root, file_name)
@@ -68,17 +77,22 @@ class StockData(Dataset):
         data = list()
         unique_dates = sorted(list(set(min_df.index.date)))
         for date in unique_dates:
-            today_data = min_df[min_df.index.date == pd.to_datetime(date).date()]
-            today_data = today_data.between_time(self.config.trade_start_time, self.config.trade_end_time)
-            today_label = daily_df[daily_df.index.date == pd.to_datetime(date).date()]
-            record = {
-                "input_data": today_data.to_numpy(),
-                "date": date,
-                "code": code,
-                "return_1": float(today_label["return_1"].values),
-                "return_2": float(today_label["return_2"].values)
-            }
-            data.append(record)
+            try:
+                today_data = min_df[min_df.index.date == pd.to_datetime(date).date()]
+                today_data = today_data.between_time(self.config.trade_start_time, self.config.trade_end_time)
+                today_label = daily_df[daily_df.index.date == pd.to_datetime(date).date()]
+                if len(today_label) == 0:
+                    continue
+                record = {
+                    "input_data": today_data.to_numpy(),
+                    "date": date,
+                    "code": code,
+                    "return_1": float(today_label["return_1"].values),
+                    "return_2": float(today_label["return_2"].values)
+                }
+                data.append(record)
+            except:
+                print("exception happen")
         return data
 
     def __getitem__(self, index):
@@ -90,6 +104,7 @@ class StockData(Dataset):
 if __name__ == "__main__":
     cfg = StockConfig()
     data = StockData(cfg)
+    # data.file_exist_check()
     for item in data:
         print(item['date'])
         print(item['code'])
