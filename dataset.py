@@ -23,9 +23,9 @@ class StockData(Dataset):
 
     def _load_stock_list(self):
         self.stock_list_df = pd.read_csv(self.config.stock_list_file,
-                                         dtype={"指数名称": str, "成分券代码": str, "成分券名称": str, "交易所": str},
-                                         index_col="成分券代码")
-        self.stock_list = self.stock_list_df.index.tolist()
+                                         dtype={"指数名称": str, "成分券代码": str, "成分券名称": str, "交易所": str})
+        self.stock_list_df['成分券代码'].apply(lambda x: ':0>6d'.format(x))
+        self.stock_list = self.stock_list_df['成分券代码'].tolist()
 
     def _load_data(self, stock_list):
         self.data = list()
@@ -34,7 +34,7 @@ class StockData(Dataset):
             self.data.extend(code_data)
 
     def _load_data_by_code(self, stock_code):
-        stock_name = self.stock_list_df.loc[stock_code, "成分券名称"]
+        stock_name = self.stock_list_df[self.stock_list_df['成分券代码'] == stock_code]["成分券名称"].values[0]
         file_name = "{}_{}.parquet".format(stock_code,stock_name)
         stock_daily_file = os.path.join(self.config.daily_data_root, file_name)
         stock_min_file = os.path.join(self.config.min_data_root, file_name)
@@ -93,4 +93,5 @@ if __name__ == "__main__":
     for item in data:
         print(item['date'])
         print(item['code'])
+        print(item['return_1'])
     print("done")
